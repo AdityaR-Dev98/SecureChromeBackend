@@ -47,21 +47,39 @@ def serialize_report(report):
 async def report(report: Report):
     try:
         report_data = report.dict()
-        result = reports_collection.insert_one(report_data)
+        
+        # Try MongoDB insertion and log the outcome
+        try:
+            result = reports_collection.insert_one(report_data)
+            print(f"Inserted into MongoDB: {result.inserted_id}")
+        except Exception as mongo_err:
+            print(f"MongoDB insertion error: {mongo_err}")
+            raise HTTPException(status_code=500, detail="Error inserting report into MongoDB")
 
+        # Prepare data for Firebase and log the attempt
         firestore_data = {
             "url": report.url,
             "description": report.description,
             "timestamp": datetime.utcnow()
         }
+        try:
+            add_data("reports", str(result.inserted_id), firestore_data)
+            print(f"Added to Firebase with ID: {result.inserted_id}")
+        except Exception as firebase_err:
+            print(f"Firebase insertion error: {firebase_err}")
+            raise HTTPException(status_code=500, detail="Error inserting report into Firebase")
 
-        add_data("reports", str(result.inserted_id), firestore_data)
-
+        # Find and return the newly inserted report
         inserted_report = reports_collection.find_one({"_id": result.inserted_id})
-        return {"message": "Report submitted successfully", "report": serialize_report(inserted_report)}
+        if inserted_report:
+            return {"message": "Report submitted successfully", "report": serialize_report(inserted_report)}
+        else:
+            raise HTTPException(status_code=404, detail="Report not found in MongoDB after insertion")
+
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @app.post("/scan")
 async def scan(scan_request: ScanRequest):
