@@ -1,66 +1,56 @@
-from fastapi import FastAPI, HTTPException
+import validators  # To validate the URL
+from fastapi import APIRouter, HTTPException
 import joblib
-import numpy as np  # Import numpy for array reshaping
-import pandas as pd  # Import pandas for DataFrame creation
+import pandas as pd
+from app.utils.utils import extract_url_features
 
-# Load the trained model pipeline (includes preprocessor and classifier)
-model_pipeline = joblib.load('C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\random_forest_pipeline.pkl')
+MODEL_PATH="C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\random_forest_pipeline.pkl"
+# Load the trained model pipeline
+try:
+    model_pipeline = joblib.load(MODEL_PATH)
+except Exception as e:
+    raise RuntimeError(f"Error loading model: {str(e)}")
 
-# Initialize FastAPI app
-app = FastAPI()
+# Router instance
+router = APIRouter()
 
-@app.post("/scan")
+@router.post("/scan")
 async def scan(url: str):
     try:
-        # Create a DataFrame for the input
-        input_data = pd.DataFrame({
-            "url": [url],
-            "length_url": [len(url)],
-            "length_hostname": [url.split('/')[2].count('.') if '://' in url else url.count('.')],
-            "ip": [0],  # Placeholder for actual IP check
-            "nb_dots": [url.count('.')],
-            "nb_hyphens": [url.count('-')],
-            "nb_at": [url.count('@')],
-            "nb_qm": [url.count('?')],
-            "nb_and": [url.count('&')],
-            "nb_or": [url.count('|')],
-            "nb_eq": [url.count('=')],
-            "nb_underscore": [url.count('_')],
-            "nb_tilde": [url.count('~')],
-            "nb_percent": [url.count('%')],
-            "nb_slash": [url.count('/')],
-            "nb_star": [url.count('*')],
-            "nb_colon": [url.count(':')],
-            "nb_comma": [url.count(',')],
-            "nb_semicolumn": [url.count(';')],
-            "nb_dollar": [url.count('$')],
-            "nb_space": [url.count(' ')],
-            "nb_www": [url.count('www')],
-            "nb_com": [url.count('.com')],
-            "nb_dslash": [url.count('//')],
-            "http_in_path": [1 if 'http' in url else 0],
-            "https_token": [1 if 'https' in url else 0],
-            # Add additional features expected by your model
-            **{feature: [0] for feature in model_pipeline.named_steps['preprocessor'].transformers_[1][1].get_feature_names_out() if feature not in ['url']}
-        })
+        # Validate the URL
+        if not url or not validators.url(url):
+            raise HTTPException(status_code=400, detail="Invalid URL provided.")
 
-        # Log the input DataFrame for debugging
-        print(f"Input DataFrame for model:\n{input_data}")
+        # Extract features using the utility function
+        features = extract_url_features(url)
 
-        # Prepare the input data for the model
+        # Convert features into a DataFrame for prediction
+        input_data = pd.DataFrame([features])
+
+        # Get expected features from the model pipeline
+        expected_features = model_pipeline.feature_names_in_ if hasattr(model_pipeline, "feature_names_in_") else input_data.columns
+
+        # Ensure all expected features are present, adding missing ones with default value 0
+        for feature in expected_features:
+            if feature not in input_data.columns:
+                input_data[feature] = 0
+
+        # Drop any extra columns not expected by the model
+        input_data = input_data[expected_features]
+
+        # Convert numeric columns to floats and non-numeric columns to strings
+        for column in input_data.columns:
+            if input_data[column].dtype == "object":
+                input_data[column] = input_data[column].astype(str).fillna("")
+            else:
+                input_data[column] = pd.to_numeric(input_data[column], errors="coerce").fillna(0)
+
+        # Predict with the model pipeline
         prediction = model_pipeline.predict(input_data)
 
-        result = {
-            "url": url,
-            "prediction": int(prediction[0])  # Convert to int for easier handling on the frontend
-        }
+        return {"url": url, "prediction": int(prediction[0])}
 
-        return result
-    except ValueError as ve:
-        # Specific error handling for value errors
-        print(f"ValueError occurred: {str(ve)}")
-        raise HTTPException(status_code=400, detail="Invalid input data")
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        # Log the error for debugging
-        print(f"Error occurred during prediction: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        return {"url": url, "prediction": f"Error: {str(e)}"}

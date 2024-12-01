@@ -1,5 +1,13 @@
 fastapi
 uvicorn
-motor
-pydantic
+pandas
+joblib
+scikit-learn
 pymongo
+requests
+beautifulsoup4
+whois
+tldextract
+python-dotenv
+aiohttp
+validators

@@ -1,17 +1,13 @@
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore
 
-# Path to your service account key
-cred = credentials.Certificate("C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\keys\\chromeextension-ba7af-firebase-adminsdk-4wllh-24e73f6b60.json")  # Update the path
-
-# Initialize the Firebase app
+# Initialize Firebase app
+cred = credentials.Certificate("C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\keys\\chromeextension-ba7af-firebase-adminsdk-4wllh-24e73f6b60.json")
 firebase_admin.initialize_app(cred)
 
-# Initialize Firestore
-db = firestore.client()  # Initialize Firestore
+# Firestore client
+db = firestore.client()
 
-# Example usage function to add data to Firestore
 def add_data(collection, document_id, data):
     """Add data to Firestore."""
     db.collection(collection).document(document_id).set(data)

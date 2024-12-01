@@ -1,66 +1,75 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from pymongo import MongoClient
 from datetime import datetime
-from bson import ObjectId
-from ..firebase import add_data  # Ensure this points to the correct Firebase function import
+from bson.objectid import ObjectId
+from app.models.db import db  # Import database instance from db.py
+from ..firebase import add_data
+from .update_model import update_prediction_based_on_reports
+from app.utils.utils import extract_url_features
+from app.routers.scan import scan  # Import scan logic to fetch current predictions
 
-# Initialize the router
-router = APIRouter()
 
-# MongoDB setup
-client = MongoClient("mongodb://localhost:27017/")
-db = client["secure_chrome_extension"]
-reports_collection = db["reports"]
-
-# Define a Pydantic model for the report request body
+# Define the report schema
 class Report(BaseModel):
     url: str
     description: str
+    user_id: str
 
+# Helper function to serialize MongoDB documents
 def serialize_report(report):
-    """Serialize the MongoDB report document to JSON format."""
     return {
         "id": str(report["_id"]),
         "url": report["url"],
         "description": report["description"],
-        "timestamp": report["timestamp"]
+        "timestamp": report["timestamp"],
+        "user_id": report["user_id"]
     }
+
+# Router instance
+router = APIRouter()
 
 @router.post("/report")
 async def report(report: Report):
     try:
         report_data = report.dict()
-        report_data["timestamp"] = datetime.utcnow()  # Add a timestamp field to the report
+        report_data["timestamp"] = datetime.utcnow()
 
-        # MongoDB insertion with error handling
-        try:
-            result = reports_collection.insert_one(report_data)
-            print(f"Inserted into MongoDB with ID: {result.inserted_id}")
-        except Exception as mongo_err:
-            print(f"MongoDB insertion error: {mongo_err}")
-            raise HTTPException(status_code=500, detail="Error inserting report into MongoDB")
+        # Check if the user already reported this URL
+        existing_report = await db["reports"].find_one({"url": report.url, "user_id": report.user_id})
+        if existing_report:
+            raise HTTPException(status_code=400, detail="You have already reported this website.")
 
-        # Prepare data for Firebase and handle potential Firebase errors
+        # Get the current prediction for the URL
+        scan_response = await scan(report.url)
+        current_prediction = scan_response["prediction"]
+
+        # Check if the report contradicts the current prediction
+        report_is_opposite = (
+            (current_prediction == "Safe" and "malicious" in report.description.lower()) or
+            (current_prediction == "Malicious" and "safe" in report.description.lower())
+        )
+
+        # Insert the report into MongoDB
+        result = await db["reports"].insert_one(report_data)
+        report_id = result.inserted_id
+
+        # Add the data to Firebase
         firestore_data = {
             "url": report.url,
             "description": report.description,
             "timestamp": report_data["timestamp"]
         }
-        try:
-            add_data("reports", str(result.inserted_id), firestore_data)
-            print(f"Added to Firebase with ID: {result.inserted_id}")
-        except Exception as firebase_err:
-            print(f"Firebase insertion error: {firebase_err}")
-            raise HTTPException(status_code=500, detail="Error inserting report into Firebase")
+        add_data("reports", str(report_id), firestore_data)
 
-        # Retrieve the inserted report for response
-        inserted_report = reports_collection.find_one({"_id": result.inserted_id})
-        if inserted_report:
-            return {"message": "Report submitted successfully", "report": serialize_report(inserted_report)}
-        else:
-            raise HTTPException(status_code=404, detail="Report not found in MongoDB after insertion")
+        # Count reports for the URL
+        report_count = await db["reports"].count_documents({"url": report.url})
+
+        # If contradictions exceed threshold (e.g., 10 reports), update the prediction
+        if report_is_opposite and report_count >= 10:
+            await update_prediction_based_on_reports(report.url)
+
+        inserted_report = await db["reports"].find_one({"_id": report_id})
+        return {"message": "Report submitted successfully", "report": serialize_report(inserted_report)}
 
     except Exception as e:
-        print(f"Error occurred: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=str(e))
