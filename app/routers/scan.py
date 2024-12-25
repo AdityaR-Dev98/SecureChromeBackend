@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 from app.utils.utils import extract_url_features
 
-MODEL_PATH="C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\random_forest_pipeline.pkl"
+MODEL_PATH="-"
 # Load the trained model pipeline
 try:
     model_pipeline = joblib.load(MODEL_PATH)
