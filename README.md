@@ -79,17 +79,29 @@ Replace Firebase credentials in the backend.
 **Project Structure**
 
 SecureChromeExtension/
+
 ├── manifest.json          # Chrome extension manifest
+
 ├── popup.html             # Popup interface for scanning/reporting
+
 ├── popup.js               # JS logic for scanning and reporting
+
 ├── styles.css             # Popup styling
+
 SecureChromeBackend/
 ├── app/
+
 │   ├── main.py            # FastAPI main application
+
 │   ├── routers/
+
 │   │   ├── scan.py        # Scan endpoint
+
 │   │   ├── report.py      # Report endpoint
+
 │   │   └── update_model.py # Model update endpoint
+
 │   └── models/            # Database models
+
 └── requirements.txt       # Python dependencies
 
