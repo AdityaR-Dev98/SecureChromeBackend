@@ -1,4 +1,4 @@
-**SecureChromeExtension**
+<H1>**SecureChromeExtension**</H1>
 
 SecureChromeExtension is a lightweight Chrome extension designed to detect phishing and malicious websites in real-time. By leveraging machine learning and crowdsourced user reports, it enhances web security by providing users with immediate feedback on the safety of the websites they visit.
 
