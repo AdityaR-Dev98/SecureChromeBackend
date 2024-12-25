@@ -1,10 +1,10 @@
-<H1>**SecureChromeExtension**</H1>
+<H1>SecureChromeExtension</H1>
 
 SecureChromeExtension is a lightweight Chrome extension designed to detect phishing and malicious websites in real-time. By leveraging machine learning and crowdsourced user reports, it enhances web security by providing users with immediate feedback on the safety of the websites they visit.
 
 If a website is detected as malicious, users are alerted instantly, and they can report incorrect classifications to improve accuracy over time.
 
-**Features**
+<H2>Features</H2>
 
 Real-time Website Scanning: Automatically scans the currently opened webpage and predicts if it is safe or malicious.
 
@@ -20,7 +20,7 @@ User-Friendly Interface: Minimalist popup UI for easy scanning and reporting.
 
 Notification System: Alerts users with Chrome notifications when malicious sites are detected.
 
-**Tech Stack**
+<h2>Tech Stack<h2>
 
 Frontend: HTML, CSS, JavaScript (Chrome Extension)
 
@@ -34,7 +34,7 @@ Machine Learning: Random Forest Classifier with Label Encoder
 
 API: PhishTank API Integration
 
-**How It Works**
+<h2>How It Works</h2>
 
 Scan: When the user clicks "Scan", the extension captures the active tab URL and sends it to the FastAPI backend.
 
@@ -46,7 +46,7 @@ Report: Users can submit incorrect results to improve detection accuracy.
 
 Storage: Reports and scan logs are stored in MongoDB and Firebase Firestore.
 
-**Installation**
+<h2>Installation</h2>
 
 Clone this repository.
 
@@ -58,7 +58,7 @@ Click "Load Unpacked" and select the cloned repository's folder.
 
 The extension will now appear in your extensions list.
 
-**Configuration**
+<h2>Configuration</h2>
 
 Backend Setup:
 
@@ -76,7 +76,7 @@ Set up Firestore in Native mode.
 
 Replace Firebase credentials in the backend.
 
-**Project Structure**
+<h2>Project Structure</h2>
 
 SecureChromeExtension/
 
