@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # Initialize Firebase app
-cred = credentials.Certificate("C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\keys\\chromeextension-ba7af-firebase-adminsdk-4wllh-24e73f6b60.json")
+cred = credentials.Certificate("-")
 firebase_admin.initialize_app(cred)
 
 # Firestore client
