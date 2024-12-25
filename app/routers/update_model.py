@@ -13,7 +13,7 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client["secure_chrome_extension"]
 
 # Load the current model
-MODEL_PATH = "C:\\Users\\rasto\\Downloads\\SecureChromeBackend\\random_forest_pipeline.pkl"
+MODEL_PATH = "-"
 try:
     model_pipeline = joblib.load(MODEL_PATH)
 except FileNotFoundError:
