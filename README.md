@@ -89,6 +89,7 @@ SecureChromeExtension/
 ├── styles.css             # Popup styling
 
 SecureChromeBackend/
+
 ├── app/
 
 │   ├── main.py            # FastAPI main application
