@@ -20,7 +20,7 @@ User-Friendly Interface: Minimalist popup UI for easy scanning and reporting.
 
 Notification System: Alerts users with Chrome notifications when malicious sites are detected.
 
-<h2>Tech Stack<h2>
+<h2>Tech Stack</h2>
 
 Frontend: HTML, CSS, JavaScript (Chrome Extension)
 
